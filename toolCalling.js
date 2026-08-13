@@ -1,6 +1,9 @@
 import Groq from "groq-sdk";
+import { tavily } from "@tavily/core";
 
 const groq = new Groq();
+const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
+
 async function main() {
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
@@ -14,7 +17,7 @@ async function main() {
       },
       {
         role: "user",
-        content: "What is the current weather in Rajshahi?",
+        content: "What is the current weather in Dhaka?",
       },
     ],
     tools: [
@@ -51,13 +54,13 @@ async function main() {
   }
 
   for (const tool of toolCalls) {
-    console.log("tool", tool);
+    // console.log("tool", tool);
     const functionName = tool.function.name;
     const functionParams = tool.function.arguments;
 
     if (functionName === "get_weather") {
       const toolResult = await get_weather(JSON.parse(functionParams));
-      console.log("toolResult", toolResult);
+      console.log("toolResult:", toolResult);
     }
   }
   //   console.log(completion.choices[0]?.message);
@@ -65,8 +68,14 @@ async function main() {
 
 main().catch(console.error);
 
-//get_weather tool(function) 
+//get_weather tool(function)
 async function get_weather({ location }) {
   console.log("get_weather function calling...");
-  return "The current weather in Moscow is 28 degree celcius";
+  const response = await tvly.search(location);
+//   console.log("Response", response);
+  const finalResult = response.results
+    .map((result) => result.content)
+    .join("\n\n");
+//   console.log("FinalResult:", finalResult);
+  return finalResult;
 }
